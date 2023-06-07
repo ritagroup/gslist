@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gslist/gs_list/gs_list.dart';
+import 'package:gslist/gs_list/models/pull_down_refresh_option.dart';
+import 'package:gslist/gs_list/models/shimmer_model.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,21 +16,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
@@ -40,15 +27,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -56,47 +34,203 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  late GSList gsList;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  List<String> list = [
+    'This is a sample for  gslist 1',
+    'This is a sample for  gslist 2',
+    'This is a sample for  gslist 3',
+    'This is a sample for  gslist 4',
+    'This is a sample for  gslist 5',
+    'This is a sample for  gslist 6',
+    'This is a sample for  gslist 7',
+    'This is a sample for  gslist 8',
+    'This is a sample for  gslist 9',
+    'This is a sample for  gslist 10',
+    'This is a sample for  gslist 11',
+    'This is a sample for  gslist 12',
+    'This is a sample for  gslist 13',
+    'This is a sample for  gslist 14',
+    'This is a sample for  gslist 15',
+    'This is a sample for  gslist 16',
+    'This is a sample for  gslist 17',
+    'This is a sample for  gslist 18',
+    'This is a sample for  gslist 19',
+    'This is a sample for  gslist 20',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
+        backgroundColor: Colors.white54,
         title: Text(widget.title),
       ),
-      body: GSList(
+      body: gsList = GSList<String>(
+        itemBuilder: (context, index) {
+          return Item(
+            model: list[index],
+          );
+        },
+        loadMore: () {
+          if(list.length<50) {
+            List<String> temp = [
+              'saeed 1',
+              'saeed 2',
+              'saeed 3',
+              'saeed 4',
+              'saeed 5',
+              'saeed 6',
+              'saeed 7',
+              'saeed 8',
+              'saeed 9',
+              'saeed 10',
+              'saeed 11',
+              'saeed 12',
+              'saeed 13',
+              'saeed 14',
+              'saeed 15',
+              'saeed 16',
+              'saeed 71',
+              'saeed 18',
+              'saeed 19',
+              'saeed 20',
+              'saeed 21',
+              'saeed 22',
+              'saeed 23',
+              'saeed 24',
+              'saeed 25',
+              'saeed 26',
+              'saeed 27',
+              'saeed 28',
+              'saeed 29',
+              'saeed 30',
+            ];
+            list.addAll(temp);
+            return list;
+          }else {
+            return list ;
+          }
 
-        itemBuilder: (context, index) => const Text('hiiiiiiiiii'),
-        itemCount: 10,
+        },
+        itemCount: list.length,
+        isLoading: false,
+        enableShimmerLoading: true,
+        pullDownRefreshOption: PullDownRefreshOption(
+          onLoading: (controller) {
+            setState(() {});
+            controller.refreshCompleted();
+          },
+          onRefresh: (controller) {
+            setState(() {});
+            controller.refreshCompleted();
+          },
+        ),
+        controller: ScrollController(),
+        emptyWidget: const Text('list is empty '),
+        loadingWidget: const Text('loading please waite'),
+        shimmerProperties:
+            ShimmerProperties(baseColor: Colors.black12, highlightColor: Colors.white, child: const ItemShimmer()),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class Item extends StatelessWidget {
+  const Item({Key? key, required this.model}) : super(key: key);
+
+  final String model;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 70,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(
+          Radius.circular(8),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.ac_unit,
+              color: Colors.blue,
+              size: 50,
+            ),
+            const SizedBox(
+              width: 12,
+            ),
+            Expanded(
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  model,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ItemShimmer extends StatelessWidget {
+  const ItemShimmer({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Container(
+        height: 70,
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(
+            Radius.circular(8),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Container(
+                height: 50,
+                width: 50,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 12,
+              ),
+              Expanded(
+                child: Center(
+                  widthFactor: 1,
+                  child: Container(
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

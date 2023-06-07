@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:gslist/gs_list/models/pull_down_refresh_option.dart';
 import 'package:gslist/gs_list/models/shimmer_model.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 
-class GSList extends StatelessWidget {
+class GSList<T> extends StatefulWidget {
   GSList({
     Key? key,
     required this.itemBuilder,
@@ -19,24 +20,44 @@ class GSList extends StatelessWidget {
     this.isLoading,
     this.shimmerProperties,
     this.enableShimmerLoading,
-    this.enablePullDownRefresh, this.pullDownRefreshOption
-
+    this.enablePullDownRefresh,
+    this.pullDownRefreshOption,
+    this.emptyWidget,
+    this.loadingWidget,
+    this.loadMore,
   }) : super(key: key);
 
-  final int itemCount;
+  int itemCount;
+  final NullableIndexedWidgetBuilder itemBuilder;
+  final Widget? emptyWidget;
+  final Widget? loadingWidget;
+  final ShimmerProperties? shimmerProperties;
+  final bool? isLoading;
+  final bool? enableShimmerLoading;
   final ScrollController? controller;
   final ScrollPhysics? physics;
   final Axis? scrollDirection;
   final bool? shrinkWrap;
   final double? height;
-  final NullableIndexedWidgetBuilder itemBuilder;
   final ScrollViewKeyboardDismissBehavior? keyboardDismissBehavior;
-  final bool? isLoading;
-  final bool? enableShimmerLoading;
   final bool? enablePullDownRefresh;
-  final ShimmerProperties? shimmerProperties;
   final PullDownRefreshOption? pullDownRefreshOption;
-  RefreshController refreshController = RefreshController(initialRefresh: false);
+  final ValueGetter<List<T>>? loadMore;
+
+  @override
+  State<GSList<T>> createState() => _GSListState<T>();
+}
+
+class _GSListState<T> extends State<GSList<T>> {
+  final RefreshController refreshController = RefreshController(initialRefresh: false);
+
+  @override
+  void initState() {
+    widget.controller?.addListener(() {
+      _onScroll();
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,29 +73,58 @@ class GSList extends StatelessWidget {
         // If you want load more with noMoreData state ,may be you should return false
         return false;
       },
-      child: (isLoading ?? false)
-          ? LoadingWidget(
-        enableShimmer: enableShimmerLoading,
-        shimmerProperties: shimmerProperties,
-      )
-          : ListWidget(
-        itemBuilder: itemBuilder,
-        itemCount: itemCount,
-        controller: controller,
-        height: height,
-        keyboardDismissBehavior: keyboardDismissBehavior,
-        physics: physics,
-        scrollDirection: scrollDirection,
-        shrinkWrap: shrinkWrap,
-        enablePullDownRefresh: enablePullDownRefresh ?? false,
-      ),
+      child: (widget.isLoading ?? false)
+          ? _LoadingWidget(
+              scrollDirection: widget.scrollDirection,
+              simpleLoading: widget.loadingWidget,
+              enableShimmer: widget.enableShimmerLoading,
+              shimmerProperties: widget.shimmerProperties,
+            )
+          : _ListWidget(
+              itemBuilder: widget.itemBuilder,
+              itemCount: widget.itemCount,
+              controller: widget.controller,
+              height: widget.height,
+              pullDownRefreshOption: widget.pullDownRefreshOption,
+              emptyWidget: widget.emptyWidget,
+              loadingWidget: widget.loadingWidget,
+              keyboardDismissBehavior: widget.keyboardDismissBehavior,
+              physics: widget.physics,
+              scrollDirection: widget.scrollDirection,
+              shrinkWrap: widget.shrinkWrap,
+              enablePullDownRefresh: widget.enablePullDownRefresh ?? false,
+              refreshController: refreshController,
+            ),
     );
+  }
+
+  void refreshComplete() {
+    refreshController.refreshCompleted();
+  }
+
+  bool _isBottom() {
+    if (!widget.controller!.hasClients) return false;
+    final maxScroll = widget.controller!.position.maxScrollExtent;
+    final currentScroll = widget.controller!.offset;
+    return currentScroll >= (maxScroll * 0.9);
+  }
+
+  _onScroll() {
+    if (_isBottom()) {
+      if ((widget.loadMore?.call().length ?? 0) != 0) {
+        int count = widget.loadMore?.call().length ?? 0;
+        setState(() {
+          widget.itemCount = count;
+        });
+      }
+    }
   }
 }
 
-class ListWidget extends StatelessWidget {
-  ListWidget({
+class _ListWidget extends StatelessWidget {
+  const _ListWidget({
     Key? key,
+    required this.refreshController,
     required this.itemCount,
     this.controller,
     this.physics,
@@ -85,31 +135,38 @@ class ListWidget extends StatelessWidget {
     this.keyboardDismissBehavior,
     this.enablePullDownRefresh,
     this.pullDownRefreshOption,
+    this.emptyWidget,
+    this.loadingWidget,
   }) : super(key: key);
 
   final int itemCount;
+  final ScrollController? controller;
   final bool? enablePullDownRefresh;
   final PullDownRefreshOption? pullDownRefreshOption;
-  final ScrollController? controller;
   final ScrollPhysics? physics;
   final Axis? scrollDirection;
   final bool? shrinkWrap;
   final double? height;
   final NullableIndexedWidgetBuilder itemBuilder;
   final ScrollViewKeyboardDismissBehavior? keyboardDismissBehavior;
-  RefreshController refreshController = RefreshController(initialRefresh: false);
+  final Widget? emptyWidget;
+  final Widget? loadingWidget;
+  final RefreshController refreshController;
 
   @override
   Widget build(BuildContext context) {
     if (itemCount == 0) {
-      return SizedBox(height: height ?? double.infinity, child: Container());
+      return SizedBox(height: height ?? double.infinity, child: emptyWidget);
     } else {
       return SmartRefresher(
         controller: refreshController,
         enablePullDown: true,
-        onRefresh:pullDownRefreshOption?.onRefresh,
-        onLoading:pullDownRefreshOption?.onLoading,
-
+        onRefresh: () {
+          pullDownRefreshOption?.onRefresh?.call(refreshController);
+        },
+        onLoading: () {
+          pullDownRefreshOption?.onLoading?.call(refreshController);
+        },
         child: ListView.builder(
           controller: controller,
           physics: physics,
@@ -124,15 +181,38 @@ class ListWidget extends StatelessWidget {
   }
 }
 
-class LoadingWidget extends StatelessWidget {
-  const LoadingWidget({Key? key, this.shimmerProperties, this.enableShimmer}) : super(key: key);
+class _LoadingWidget extends StatelessWidget {
+  const _LoadingWidget({
+    Key? key,
+    this.shimmerProperties,
+    this.enableShimmer,
+    this.simpleLoading,
+    this.scrollDirection,
+  }) : super(key: key);
   final ShimmerProperties? shimmerProperties;
+  final Widget? simpleLoading;
 
+  final Axis? scrollDirection;
   final bool? enableShimmer;
 
   @override
   Widget build(BuildContext context) {
-    if ((enableShimmer ?? false) && shimmerProperties != null) {} else {}
-    return const Placeholder();
+    if ((enableShimmer ?? false) && shimmerProperties != null) {
+      return ListView.builder(
+        scrollDirection: scrollDirection ?? Axis.vertical,
+        itemCount: 10,
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: shimmerProperties!.baseColor,
+            highlightColor: shimmerProperties!.highlightColor,
+            child: shimmerProperties!.child,
+          );
+        },
+      );
+    } else if (simpleLoading != null) {
+      return Center(child: simpleLoading ?? Container());
+    } else {
+      return Container();
+    }
   }
 }
