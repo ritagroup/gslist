@@ -6,13 +6,14 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 
 // ignore: must_be_immutable
-class GSList<T> extends StatelessWidget {
+class GSList<T> extends StatefulWidget {
   GSList({
     Key? key,
     required this.controller,
     required this.onItemBuilder,
     required this.onLoadData,
     required this.itemCount,
+    this.paginationEnable,
     this.height,
     this.emptyWidget,
     this.loadingWidget,
@@ -36,8 +37,23 @@ class GSList<T> extends StatelessWidget {
   final bool? shrinkWrap;
   final double? height;
   final bool? enablePullDownRefresh;
-  final RefreshController refreshController = RefreshController(initialRefresh: false);
+  final bool? paginationEnable;
+
   int itemCount;
+
+  @override
+  State<GSList<T>> createState() => _GSListState<T>();
+}
+
+class _GSListState<T> extends State<GSList<T>> {
+  final RefreshController refreshController = RefreshController(initialRefresh: false);
+
+  @override
+  void initState() {
+    widget.controller.page = 1 ;
+    widget.onLoadData(widget.controller.page) ;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,25 +69,26 @@ class GSList<T> extends StatelessWidget {
         // If you want load more with noMoreData state ,may be you should return false
         return false;
       },
-      child: (controller.isLoading ?? true)
+      child: (widget.controller.isLoading ?? true)
           ? _LoadingWidget(
-              scrollDirection: scrollDirection,
-              simpleLoading: loadingWidget,
-              enableShimmer: enableShimmerLoading,
-              shimmerProperties: shimmerProperties,
+              scrollDirection: widget.scrollDirection,
+              simpleLoading: widget.loadingWidget,
+              enableShimmer: widget.enableShimmerLoading,
+              shimmerProperties: widget.shimmerProperties,
             )
           : _ListWidget(
-              controller: controller,
-              onItemBuilder: onItemBuilder,
-              onLoadData: onLoadData,
-              itemCount: itemCount,
-              height: height,
-              emptyWidget: emptyWidget,
-              loadingWidget: loadingWidget,
-              physics: physics,
-              scrollDirection: scrollDirection,
-              shrinkWrap: shrinkWrap,
-              enablePullDownRefresh: enablePullDownRefresh ?? false,
+              controller: widget.controller,
+              onItemBuilder: widget.onItemBuilder,
+              onLoadData: widget.onLoadData,
+              itemCount: widget.itemCount,
+              paginationEnable: widget.paginationEnable ?? false,
+              height: widget.height,
+              emptyWidget: widget.emptyWidget,
+              loadingWidget: widget.loadingWidget,
+              physics: widget.physics,
+              scrollDirection: widget.scrollDirection,
+              shrinkWrap: widget.shrinkWrap,
+              enablePullDownRefresh: widget.enablePullDownRefresh ?? false,
               refreshController: refreshController,
             ),
     );
@@ -86,6 +103,7 @@ class _ListWidget extends StatelessWidget {
     required this.onLoadData,
     required this.refreshController,
     required this.itemCount,
+    required this.paginationEnable,
     this.physics,
     this.scrollDirection,
     this.shrinkWrap,
@@ -99,6 +117,8 @@ class _ListWidget extends StatelessWidget {
   final OnItemBuilder onItemBuilder;
   final OnLoadData onLoadData;
   final int itemCount;
+  final bool paginationEnable;
+
   final bool? enablePullDownRefresh;
   final ScrollPhysics? physics;
   final Axis? scrollDirection;
@@ -131,7 +151,7 @@ class _ListWidget extends StatelessWidget {
                 shrinkWrap: shrinkWrap ?? false,
                 itemCount: itemCount,
                 itemBuilder: (context, index) {
-                  if (index == itemCount - 1) {
+                  if (paginationEnable && index == itemCount - 1) {
                     controller.isLoading = true;
                     onLoadData.call(++controller.page);
                   }

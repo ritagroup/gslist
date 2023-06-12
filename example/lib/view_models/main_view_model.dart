@@ -8,12 +8,6 @@ class MainViewModel extends GetxController {
   List<ApiResponse> items = [];
   GSListController controller = GSListController();
 
-  @override
-  void onInit() {
-    super.onInit();
-    getList(1);
-  }
-
   getList(int page) async {
     BaseResponse? result = await getIt<Repository>().getList(page);
     items.addAll(result!.results!);

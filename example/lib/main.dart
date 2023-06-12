@@ -56,6 +56,7 @@ class MyHomePage extends StatelessWidget {
             onLoadData: (int nextPage) {
               viewModel.getList(nextPage);
             },
+            paginationEnable: true,
             itemCount: viewModel.items.length,
             enableShimmerLoading: true,
             emptyWidget: const Text('list is empty '),
