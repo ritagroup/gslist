@@ -1,7 +1,7 @@
 name: gslist
 description: gslist
 version: 0.0.1
-homepage:
+homepage: 'https://github.com/ritagroup/gslist'
 
 environment:
   sdk: '>=3.0.1 <4.0.0'
