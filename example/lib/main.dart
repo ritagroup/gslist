@@ -1,9 +1,13 @@
+import 'package:example/di/di.dart';
+import 'package:example/services/response.dart';
+import 'package:example/view_models/main_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:gslist/gs_list/gs_list.dart';
-import 'package:gslist/gs_list/models/pull_down_refresh_option.dart';
 import 'package:gslist/gs_list/models/shimmer_model.dart';
 
-void main() {
+void main() async {
+  configureDependencies();
   runApp(const MyApp());
 }
 
@@ -19,119 +23,48 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+// ignore: must_be_immutable
+class MyHomePage extends StatelessWidget {
+  MyHomePage({super.key, required this.title});
 
   final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  late GSList gsList;
-
-  List<String> list = [
-    'This is a sample for  gslist 1',
-    'This is a sample for  gslist 2',
-    'This is a sample for  gslist 3',
-    'This is a sample for  gslist 4',
-    'This is a sample for  gslist 5',
-    'This is a sample for  gslist 6',
-    'This is a sample for  gslist 7',
-    'This is a sample for  gslist 8',
-    'This is a sample for  gslist 9',
-    'This is a sample for  gslist 10',
-    'This is a sample for  gslist 11',
-    'This is a sample for  gslist 12',
-    'This is a sample for  gslist 13',
-    'This is a sample for  gslist 14',
-    'This is a sample for  gslist 15',
-    'This is a sample for  gslist 16',
-    'This is a sample for  gslist 17',
-    'This is a sample for  gslist 18',
-    'This is a sample for  gslist 19',
-    'This is a sample for  gslist 20',
-  ];
+  late MainViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white54,
-        title: Text(widget.title),
-      ),
-      body: gsList = GSList<String>(
-        itemBuilder: (context, index) {
-          return Item(
-            model: list[index],
-          );
-        },
-        loadMore: () {
-          if(list.length<50) {
-            List<String> temp = [
-              'saeed 1',
-              'saeed 2',
-              'saeed 3',
-              'saeed 4',
-              'saeed 5',
-              'saeed 6',
-              'saeed 7',
-              'saeed 8',
-              'saeed 9',
-              'saeed 10',
-              'saeed 11',
-              'saeed 12',
-              'saeed 13',
-              'saeed 14',
-              'saeed 15',
-              'saeed 16',
-              'saeed 71',
-              'saeed 18',
-              'saeed 19',
-              'saeed 20',
-              'saeed 21',
-              'saeed 22',
-              'saeed 23',
-              'saeed 24',
-              'saeed 25',
-              'saeed 26',
-              'saeed 27',
-              'saeed 28',
-              'saeed 29',
-              'saeed 30',
-            ];
-            list.addAll(temp);
-            return list;
-          }else {
-            return list ;
-          }
+    viewModel = Get.put(MainViewModel());
 
-        },
-        itemCount: list.length,
-        isLoading: false,
-        enableShimmerLoading: true,
-        pullDownRefreshOption: PullDownRefreshOption(
-          onLoading: (controller) {
-            setState(() {});
-            controller.refreshCompleted();
-          },
-          onRefresh: (controller) {
-            setState(() {});
-            controller.refreshCompleted();
-          },
-        ),
-        controller: ScrollController(),
-        emptyWidget: const Text('list is empty '),
-        loadingWidget: const Text('loading please waite'),
-        shimmerProperties:
-            ShimmerProperties(baseColor: Colors.black12, highlightColor: Colors.white, child: const ItemShimmer()),
-      ),
+    return GetBuilder<MainViewModel>(
+      builder: (GetxController controller) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white54,
+            title: Text(title),
+          ),
+          body: GSList<ApiResponse>(
+            controller: viewModel.controller,
+            onItemBuilder: (index) {
+              return Item(
+                model: viewModel.items[index],
+              );
+            },
+            onLoadData: (int nextPage) {
+              viewModel.getList(nextPage);
+            },
+            itemCount: viewModel.items.length,
+            enableShimmerLoading: true,
+            emptyWidget: const Text('list is empty '),
+            loadingWidget: const Text('loading please waite'),
+            shimmerProperties:
+                ShimmerProperties(baseColor: Colors.black12, highlightColor: Colors.white, child: const ItemShimmer()),
+          ),
+        );
+      },
     );
   }
 }
@@ -139,7 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
 class Item extends StatelessWidget {
   const Item({Key? key, required this.model}) : super(key: key);
 
-  final String model;
+  final ApiResponse model;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +100,7 @@ class Item extends StatelessWidget {
               child: Center(
                 widthFactor: 1,
                 child: Text(
-                  model,
+                  model.title ?? '',
                   style: const TextStyle(
                     color: Colors.black54,
                     fontSize: 16,
